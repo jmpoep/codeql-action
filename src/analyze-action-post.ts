@@ -7,10 +7,11 @@ import * as core from "@actions/core";
 
 import * as actionsUtil from "./actions-util";
 import { getGitHubVersion } from "./api-client";
+import { getCodeQL } from "./codeql";
 import { getConfig } from "./config-utils";
 import * as debugArtifacts from "./debug-artifacts";
 import { EnvVar } from "./environment";
-import { getActionsLogger, withGroup } from "./logging";
+import { getActionsLogger } from "./logging";
 import { checkGitHubVersionInRange, getErrorMessage } from "./util";
 
 async function runWrapper() {
@@ -28,11 +29,12 @@ async function runWrapper() {
         logger,
       );
       if (config !== undefined) {
-        await withGroup("Uploading combined SARIF debug artifact", () =>
-          debugArtifacts.uploadCombinedSarifArtifacts(
-            logger,
-            config.gitHubVersion.type,
-          ),
+        const codeql = await getCodeQL(config.codeQLCmd);
+        const version = await codeql.getVersion();
+        await debugArtifacts.uploadCombinedSarifArtifacts(
+          logger,
+          config.gitHubVersion.type,
+          version.version,
         );
       }
     }
